@@ -1,0 +1,55 @@
+DEFAULT MODE
+0 - NUL (Always first character)
+1 - EXECUTE (Always last character otherwise treated as data file)
+2 - MethodStart
+3 - MethodEnd/ArgumentStart
+4 - ArgumentEnd
+5 - ArgumentSep
+6 - ESC (Treats next value as a RAW value not as a control value)
+7 - VARStart
+8 - VAREnd
+9 - FunctStart
+10 - FunctEnd
+COMMENTS: /*...*/
+COMMENTNEXT: \
+METHODS (Called 2 (val) 3 (arg1) 4) or (2 (val) 3 (arg1) 5 (arg2) 4) or (2 (val) 3)
+0 - PRINT (VAL)
+1 - VARSet (NAME,VAL)
+2 - INPUT (VAR)
+4 - CLEAR // NOTE: This is called as 2 4 3 Since it has no Arguments
+5 - COLOR (ID)
+8 - ABSPATH (RELATIVE_PATH)
+9 - MKDIR (DIR_NAME)
+10 - EQUALITY (A,B,VAR)
+11 - IF
+12 - CHMOD (TYPE: (0 - add, 1 - Subtr, 2 - Set), PERM, FILE, USR=CURRENT_USR)
+NOTE: ASCII 13 maps to ASCII 10 (Dont use)
+14 - READ (FILE,VAR)
+15 - Write (FILE,TXT)
+16 - APPEND (FILE,TXT)
+17 - REPLACE (ORIGINAL,REPLACE,TEXT,VAR,CNT=-1)
+18 - DELETE (FILE/DIR,FORCE=0)
+19 - ISDIR (PATH,BOOLVAR)
+BUILTIN VARS
+builtin.path (Path to executing directory)
+builtin.arg.(arg number)
+builtin.arg.stitch (all args together minus arg 0)
+builtin.thisfile (Path to current file)
+builtin.user (Current User (Root if run under sudo))
+SYSTEM COMMANDS
+cd PATH
+ls [PATH] (-a (show hidden files))
+quit
+shutdown
+reboot
+moncomp FILE
+sudo COMMAND
+sudo adduser USERNAME PASSWORD (-p/--permissions (USER_PERMISSIONS)) (-f/--filepermissions (DEFAULT_FILE_PERMISSIONS))
+changepass
+cat FILE
+chmod [add|subtr|set] PERMISSIONS FILE
+clear
+mkdir PATH
+pwd
+rm PATH
+writefile PATH [write|append] TEXT
