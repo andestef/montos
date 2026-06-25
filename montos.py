@@ -316,7 +316,7 @@ def changepass(cmdl):
         print("Error: Passwords do not match.")
         return
     d['usrlist'][d['usr']] = npwd
-    open('../.users','w',ignorePerm=True).write(str(d['usrlist']))
+    open(pathify("/.data/users.json",True),'w',ignorePerm=True).write(str(d['usrlist']))
     print("Password changed.")
 def sudo(cmdl):
     if not checkuperm('s'):
