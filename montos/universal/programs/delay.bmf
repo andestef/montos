@@ -1,0 +1,4 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
+0 2 21 3 MS 5 req 5 stitch 5 *ARGS 4 \
+2 0 3 7 argparse.MS 8 4 \
+1

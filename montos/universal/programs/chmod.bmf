@@ -1,3 +1,4 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
 0 9 add 3 4 2 12 3 0 5 7 builtin.arg.2 8 5 7 builtin.arg.3 8 4 10 \
 9 subtr 3 4 2 12 3 1 5 7 builtin.arg.2 8 5 7 builtin.arg.3 8 4 10 \
 9 set 3 4 2 12 3 2 5 7 builtin.arg.2 8 5 7 builtin.arg.3 8 4 10 \

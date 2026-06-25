@@ -1,0 +1,23 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
+writefile test.txt append hello world
+cat test.txt
+cp test.txt a.txt
+mv a.txt b.txt
+rm test.txt
+echo Right now you should have b.txt
+mkdir tester
+cd tester
+pwd
+cd ../
+pause
+clear
+rm b.txt
+// You should end up with:
+// hello world
+// RM test.txt
+// Right now you should have b.txt
+// /universal/programs/tester
+// Press enter to Continue
+// The screen will then CLEAR
+// RM b.txt
+// END

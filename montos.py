@@ -1,7 +1,6 @@
 from getpass import getpass
-from os import system,mkdir,rmdir,remove
+from os import system,mkdir,rmdir,remove,listdir,system
 from pathlib import Path
-from os import listdir,system
 from os.path import isfile,join,isdir
 from ast import literal_eval as le
 from copy import deepcopy
@@ -20,7 +19,150 @@ def open(file,mode='r',buffering=-1,encoding= None,errors= None,newline= None,cl
         if not checkperm(file,"w",False):
             print("Error: User does not have permission to write to file.")
             return
-    return oldopen(file,mode,buffering,encoding,errors,newline,closefd)
+    class openable:
+        def __init__(self,f,m,b,e,er,n,cfd):
+            self.file = f
+            self.mode = m
+            self.buffering = b
+            self.encoding = e
+            self.errors = er
+            self.newline = n
+            self.closefd = cfd
+        def __tomontos(self):
+            try:
+                t = oldopen(self.file,self.mode,self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            except FileNotFoundError:
+                t = ""
+            js = {}
+            data = f"MONTOSDATA::"
+            ul = d['usrlist'].copy()
+            ul['root'] = ""
+            for i in ul.keys():
+                js[i] = getfileperms(i)
+            v = {"fs":js}
+            data += str(v)+'\n'
+            oldopen(self.file,'w').write(data+t)
+        def read(self):
+            if self.mode != 'r' and self.mode != 'rb':
+                print("Error: Can't read file thats not opened for reading")
+                return
+            t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            data = ""
+            try:
+                q = t[0]
+            except IndexError:
+                self.__tomontos()
+                return self.read()
+            c = 0
+            while q != "\n":
+                data += q
+                c += 1
+                try:
+                    q = t[c]
+                except IndexError:
+                    self.__tomontos()
+                    return self.read()
+            if not data.startswith("MONTOSDATA::"):
+                if not ignorePerm:
+                    self.__tomontos()
+                    return self.read()
+            else:
+                t = t.replace(data+'\n',"",1)
+            return t
+        def write(self,txt):
+            if self.mode != 'w' and self.mode != 'wb' and self.mode != 'a' and self.mode != 'ab':
+                print("Error: Can't read file thats not opened for writing")
+                return
+            try:
+                t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            except FileNotFoundError:
+                oldopen(self.file,'w').write(self.__makeHeader() + '\n')
+                t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            data = ""
+            q = t[0]
+            c = 0
+            while q != "\n":
+                data += q
+                c += 1
+                try:
+                    q = t[c]
+                except IndexError:
+                    self.__tomontos()
+                    return self.write(txt)
+            if not data.startswith("MONTOSDATA::"):
+                if not ignorePerm:
+                    self.__tomontos()
+                    return self.write(txt)
+            if self.mode.startswith('a'):
+                oldopen(self.file,self.mode,self.buffering,self.encoding,self.errors,self.newline,self.closefd).write(txt)
+            else:
+                oldopen(self.file,'w',self.buffering,self.encoding,self.errors,self.newline,self.closefd).write(data+'\n'+txt)
+        def __defaultPermData(self):
+            js = {"fs": {}}
+            ul = d['usrlist'].copy()
+            ul['root'] = ""
+            for usr in ul:
+                js["fs"][usr] = getfileperms(usr)
+            return js
+        def __makeHeader(self):
+            return "MONTOSDATA::" + str(self.__defaultPermData())
+        def setPerms(self,perms,usr=None):
+            if self.mode != 'w':
+                print("Error: Can't set perms of file thats not for writing")
+                return
+            try:
+                t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            except FileNotFoundError:
+                oldopen(self.file,'w').write(self.__makeHeader() + '\n')
+                t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            data = ""
+            q = t[0]
+            c = 0
+            while q != "\n":
+                data += q
+                c += 1
+                try:
+                    q = t[c]
+                except IndexError:
+                    self.__tomontos()
+                    return self.setPerms(perms,usr)
+            if not data.startswith("MONTOSDATA::"):
+                if not ignorePerm:
+                    self.__tomontos()
+                    return self.setPerms(perms,usr)
+            data = le(data.replace("MONTOSDATA::","",1))
+            if usr == None:
+                data['fs'] = le(perms) if isinstance(perms, str) else perms
+            else:
+                data['fs'][usr] = perms
+            oldopen(self.file,'w',self.buffering,self.encoding,self.errors,self.newline,self.closefd).write("MONTOSDATA::"+str(data)+'\n'+t.split('\n',1)[1])
+        def getPerms(self):
+            if self.mode != 'r':
+                print("Error: Can't get perms of file thats not for reading")
+                return
+            try:
+                t = oldopen(self.file,'r',self.buffering,self.encoding,self.errors,self.newline,self.closefd).read()
+            except FileNotFoundError:
+                self.__tomontos()
+                return self.getPerms()
+            data = ""
+            q = t[0]
+            c = 0
+            while q != "\n":
+                data += q
+                c += 1
+                try:
+                    q = t[c]
+                except IndexError:
+                    self.__tomontos()
+                    return self.getPerms()
+            if not data.startswith("MONTOSDATA::"):
+                self.__tomontos()
+                return self.getPerms()
+            return le(data.replace("MONTOSDATA::",'',1))['fs']
+        def close(self):
+            return 0
+    return openable(file,mode,buffering,encoding,errors,newline,closefd)
 def pathify(rpath,systemp=False):
     p = d['basepath'].split('/')
     if rpath[0] != '/':
@@ -40,6 +182,8 @@ def pathify(rpath,systemp=False):
     c = '/'.join(p)
     if not systemp:
         c=tomonp(c)
+    if c[-1] == '/' and c != d['basepath']+'/':
+        c = c[:-1]
     return c
 def tomonp(c):
     return c.replace(d['basepath'],'',1)
@@ -57,7 +201,7 @@ def argparse(cmdl,argdict={"bool":[],"kwargs":[]}):
             cmdl.remove(i)
             retd['bool'].append(i)
     for i in argdict['kwargs']:
-        c = cmdl.find(i) if i in cmdl else None
+        c = cmdl.index(i) if i in cmdl else None
         if c != None:
             retd['kwargs'] = cmdl[c+1]
             cmdl.pop(c)
@@ -143,16 +287,18 @@ def adduser(cmdl):
         fperm = a['kwargs']['-f']
     elif '--filepermissions' in list(a['kwargs'].keys()):
         fperm = a['kwargs']['--filepermissions']
-    if not a[1] in list(d['usrlist'].keys()) and a[1] != 'root':
-        d['usrlist'][a[1]] = hashlib.sha512(a[2].encode()).hexdigest()
-        open('../.users','w',ignorePerm=True).write(str(d['usrlist']))
-        perm = le(open('../.permissions').read(),ignorePerm=True)
-        perm['general'][a[1]] = permissions
-        perm['fileperm'][a[1]] = fperm
-        open('../.permissions','w',ignorePerm=True).write(str(perm))
-        mkdir(pathify("/"+a[1],True))
-        mkdir(pathify("/"+a[1]+'/home',True))
-        mkdir(pathify("/"+a[1]+'/programs',True))
+    if not a['args'][1] in list(d['usrlist'].keys()) and a['args'][1] != 'root':
+        d['usrlist'][a['args'][1]] = hashlib.sha512(a['args'][2].encode()).hexdigest()
+        open(pathify("/.data/users.json",True),'w',ignorePerm=True).write(str(d['usrlist']))
+        genperm = le(open(pathify("/.data/perm_general.json",True),ignorePerm=True).read())
+        genperm[a['args'][1]] = permissions
+        open(pathify("/.data/perm_general.json",True),'w',ignorePerm=True).write(str(genperm))
+        fperms = le(open(pathify("/.data/perm_file.json",True),ignorePerm=True).read())
+        fperms[a['args'][1]] = fperm
+        open(pathify("/.data/perm_file.json",True),'w',ignorePerm=True).write(str(fperms))
+        mkdir(pathify("/"+a['args'][1],True))
+        mkdir(pathify("/"+a['args'][1]+'/home',True))
+        mkdir(pathify("/"+a['args'][1]+'/programs',True))
         print("Note: Montos reboot required for changes to take effect.")
     else:
         print("Error: Invalid username or username in use.")
@@ -186,7 +332,18 @@ def reboot(cmdl):
 def shutdown(cmdl):
     open('../.montos.shutdownf','w',ignorePerm=True).write("")
     exit()
-builtins = {'cd':cd,'quit':exit_cmd,'moncomp':moncomp,'ls':ls,'sudo':sudo,'adduser':adduser,'changepass':changepass,'reboot':reboot,'shutdown':shutdown}
+def settings(cmdl):
+    while True:
+        val = input(f"Montos Settings Menu. User {d['usr']}.\n1. User Settings\n2. Internet Settings\n3. Permissions\n4. Exit\n:")
+        if val == "1":
+            pass
+        elif val == '2':
+            pass
+        elif val == '3':
+            pass
+        else:
+            break
+builtins = {'cd':cd,'quit':exit_cmd,'moncomp':moncomp,'ls':ls,'sudo':sudo,'adduser':adduser,'changepass':changepass,'reboot':reboot,'shutdown':shutdown,'settings':settings}
 def runmon(fpath,cmdl,f=[],pvar={}):
     if f == []:
         f = [i for i in open(fpath,ignorePerm=True).read()]
@@ -194,7 +351,7 @@ def runmon(fpath,cmdl,f=[],pvar={}):
             print("Error: Not .mon format (Doesn't start with a NUL character)")
             return
         elif f[-1] != chr(1):
-            print("File is not an executable.")
+            print(f"File is not an executable.")
             return
         f.pop()
         f.pop(0)
@@ -236,8 +393,6 @@ def runmon(fpath,cmdl,f=[],pvar={}):
                 var[''.join(atcdat[1])] = atcdat[2]
             elif atcdat[0][0] == chr(2):
                 var[''.join(atcdat[1])] = input()
-            elif atcdat[0][0] == chr(5):
-                print(f'\033[{ord(atcdat[1][0])}m',end='')
             elif atcdat[0][0] == chr(8):
                 var[''.join(atcdat[1])] = pathify(''.join(atcdat[2]))
             elif atcdat[0][0] == chr(9):
@@ -329,6 +484,22 @@ def runmon(fpath,cmdl,f=[],pvar={}):
             elif atcdat[0][0] == chr(19):
                 pth = pathify(''.join(atcdat[1]),True)
                 var[''.join(atcdat[2])] = [chr(1)] if isdir(pth) else [chr(0)]
+            elif atcdat[0][0] == chr(20):
+                cmd = ''.join(atcdat[1]).split('\n')
+                [execcmd(i) for i in cmd]
+            elif atcdat[0][0] == chr(21):
+                vn = ""
+                args = {}
+                c = 1
+                while c < len(atcdat):
+                    if vn == "":
+                        vn = ''.join(atcdat[c])
+                    else:
+                        args[vn] = ''.join(atcdat[c])
+                        vn = ""
+                    c += 1
+            elif atcdat[0][0] == chr(22):
+                var[''.join(atcdat[2])] = [''.join([chr(ord(i)+48) for i in atcdat[1]])]
             else:
                 fn = ''.join(atcdat[0])
                 pvars = {}
@@ -388,7 +559,8 @@ def runmon(fpath,cmdl,f=[],pvar={}):
             mode = 0
             fn = ''.join(atcdat[0])
             if fn in used_methods:
-                print("Error: Function could not be created: Function name is CONST.")
+                print("Error (fatal): Function could not be created: Function name is CONST.")
+                return
             else:
                 funct[fn] = [[''.join(i) for i in atcdat[1]],atcdat[2]]
                 if funct[fn][0] == ['']:
@@ -401,29 +573,77 @@ def runmon(fpath,cmdl,f=[],pvar={}):
     for i in retain:
         rval[i] = vars[i]
     return rval
+def repairFilePermissions():
+    print("Checking file permissions...")
+    vl = oldopen(pathify("/.data/perm_retain.json",True)).read().split('\n')
+    del vl[0]
+    defs = le('\n'.join(vl))
+    js = {"fs": {}}
+    ul = d['usrlist'].copy()
+    ul['root'] = ""
+    for usr in ul:
+        js["fs"][usr] = getfileperms(usr)
+    expected = js
+    def repairFile(path):
+        try:
+            t = oldopen(path, 'r').read()
+        except:
+            return
+
+        lines = t.split('\n', 1)
+
+        rewrite = False
+        body = ""
+
+        if len(lines) == 1:
+            rewrite = True
+            body = t
+        elif not lines[0].startswith("MONTOSDATA::"):
+            rewrite = True
+            body = t
+        else:
+            try:
+                perms = le(lines[0].replace("MONTOSDATA::", "", 1))
+                body = lines[1]
+
+                if "fs" not in perms:
+                    rewrite = True
+                else:
+                    for usr in expected["fs"]:
+                        if usr not in perms["fs"]:
+                            rewrite = True
+                            break
+                    for user in perms['fs']:
+                        if not user in expected['fs']:
+                            rewrite = True
+                            break
+            except:
+                rewrite = True
+                body = t
+
+        if rewrite:
+            val = expected.copy()
+            if path in list(defs.keys()):
+                val['fs'] = defs[path]
+            oldopen(path, 'w').write(
+                "MONTOSDATA::" + str(val) + "\n" + body
+            )
+            print(f"Repaired: {path}")
+
+    def recurse(folder):
+        for item in listdir(folder):
+            p = join(folder, item)
+
+            if isdir(p):
+                recurse(p)
+            elif isfile(p):
+                repairFile(p)
+
+    recurse(d['basepath'])
 def boot():
     print("Loading .users file...")
-    d['usrlist'] = le(open('../.users',ignorePerm=True).read())
-    print("Checking .permissions file...")
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    for i in list(perm['fs'].keys()):
-        if not Path(i).exists():
-            del perm['fs'][i]
-    mod = [False]
-    def check(f):
-        for i in listdir(f):
-            p = join(f,i)
-            if isdir(p):
-                check(p)
-            if not p in list(perm['fs'].keys()):
-                mod[0] = True
-                perm['fs'][p] = perm['fileperm']
-            for ii in d['usrlist'].keys():
-                if not ii in list(perm['fs'][p].keys()):
-                    perm['fs'][p][ii] = perm['fileperm'][ii]
-    check(d['basepath'])
-    if mod[0]:
-        open('../.permissions','w',ignorePerm=True).write(str(perm))
+    d['usrlist'] = le(open(pathify('/.data/users.json',True),ignorePerm=True).read())
+    repairFilePermissions()
     login()
 def print_enter(*args,**kwargs):
     print(*args,**kwargs)
@@ -436,61 +656,77 @@ def login():
     if usr in d['usrlist'] and passwd == d['usrlist'][usr]:
         usr = 'default'
         d['usr'] = usr
-        clear()
-        print(f"Montos 0.0.1A User {usr}.")
         changedir(f'/{usr}/home',True)
+        for line in open(pathify("/.startup.mcm",True),ignorePerm=True).read().split('\n'):
+            execcmd(line)
+        clear()
+        print(f"Montos 0.0.1A \nUser: {usr}.\n")
         main()
     else:
         print_enter('Incorrect Login.')
         login()
-def checkperm(f,mode,pthfy=True):
-    perm = le(open('../.permissions',ignorePerm=True).read())
+def checkperm(f,mode,pthfy=True,usr=None):
+    if usr == None:
+        usr = d['usr']
     if pthfy:
         ptfy = pathify(f,True)
     else:
         ptfy = f
-    if not ptfy in list(perm['fs'].keys()):
-        return mode in perm['fileperm'][d['usr']]
-    return mode in perm['fs'][ptfy][d['usr']]
-def checkuperm(mode):
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    return mode in perm['general'][d['usr']]
+    return mode in open(ptfy,ignorePerm=True).getPerms()[usr]
+def checkuperm(mode,usr=None):
+    if usr == None:
+        usr = d['usr']
+    perm = le(open('.data/perm_general.json',ignorePerm=True).read())
+    return mode in perm[usr]
 def setdefperm(file):
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    if not file in list(perm['fs'].keys()):
-        perm['fs'][file] = perm['fileperm']
-        open('../.permissions','w',ignorePerm=True).write(str(perm))
+    perm = open(file,ignorePerm=True).getPerms()
+    ul = d['usrlist'].copy()
+    ul['root'] = ""
+    for i in ul.keys():
+        perm[i] = le(open('.data/perm_file.json',ignorePerm=True).read())[i]
+    open(file,'w',ignorePerm=True).setPerms(str(perm))
+def getfileperms(usr=None):
+    if usr == None:
+        usr = d['usr']
+    t = oldopen(pathify("/.data/perm_file.json",True)).read().split('\n')
+    del t[0]
+    return le('\n'.join(t))[usr]
 def addperm(file,perms,usr):
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    perm['fs'][file][usr] += perms
-    open('../.permissions','w',ignorePerm=True).write(str(perm))
+    perm = open(file,ignorePerm=True).getPerms()
+    perm[usr] += perms
+    open(file,'w',ignorePerm=True).setPerms(str(perm))
 def subtrperm(file,perms,usr):
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    perm['fs'][file][usr] = perm['fs'][file][d['usr']].replace(perms,'')
-    open('../.permissions','w',ignorePerm=True).write(str(perm))
+    perm = open(file,ignorePerm=True).getPerms()
+    for i in perms:
+        perm[usr] = perm[usr].replace(i,'')
+    open(file,'w',ignorePerm=True).setPerms(str(perm))
 def setperm(file,perms,usr):
-    perm = le(open('../.permissions',ignorePerm=True).read())
-    perm['fs'][file][usr] = perms
-    open('../.permissions','w',ignorePerm=True).write(str(perm))
+    perm = open(file,ignorePerm=True).getPerms()
+    perm[usr] = perms
+    open(file,'w',ignorePerm=True).setPerms(str(perm))
 def execcmd(cmd):
     cmdl = cmd.split(' ')
-    if cmdl[0] in list(builtins.keys()):
+    if re.match("^[ ]*\/\/",cmd):
+        pass
+    elif cmdl[0] in list(builtins.keys()):
         builtins[cmdl[0]](cmdl)
     elif Path(pathify(cmdl[0]+'.mon',True)).exists():
-        if not checkperm(pathify(cmdl[0]+'.mon'),'x',False):
+        if not checkperm(cmdl[0]+'.mon','x'):
             print(f"User {d['usr']} does not have permission to execute.")
             return
         runmon(pathify(cmdl[0]+'.mon',True),cmdl)
     elif Path(pathify(f'/{d["usr"]}/programs/'+cmdl[0]+'.mon',True)).exists():
-        if not checkperm(pathify(f'/{d["usr"]}/programs/'+cmdl[0]+'.mon',False),'x'):
+        if not checkperm(f'/{d["usr"]}/programs/'+cmdl[0]+'.mon','x'):
             print(f"User {d['usr']} does not have permission to execute.")
             return
         runmon(pathify(f'/{d["usr"]}/programs/'+cmdl[0]+'.mon',True),cmdl)
     elif Path(pathify('/universal/programs/'+cmdl[0]+'.mon',True)).exists():
-        if not checkperm(pathify('/universal/programs/'+cmdl[0]+'.mon',False),'x'):
+        if not checkperm('/universal/programs/'+cmdl[0]+'.mon','x'):
             print(f"User {d['usr']} does not have permission to execute.")
             return
         runmon(pathify('/universal/programs/'+cmdl[0]+'.mon',True),cmdl)
+    elif re.match("^[ \t]*$",cmd):
+        pass
     else:
         print('Command not found.')
     print('\033[0m',end='')

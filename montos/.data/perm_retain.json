@@ -1,0 +1,2 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
+{"/home/pi/montos/montos/universal/programs/chmod.mon":{'fs': {'default': 'rwxc', 'root': 'rwxcs'}}}

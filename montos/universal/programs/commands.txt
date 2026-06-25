@@ -1,0 +1,21 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
+SYSTEM COMMANDS
+cd PATH
+ls [PATH] (-a (show hidden files))
+quit
+shutdown
+reboot
+moncomp FILE
+sudo COMMAND
+sudo adduser USERNAME PASSWORD (-p/--permissions (USER_PERMISSIONS)) (-f/--filepermissions (DEFAULT_FILE_PERMISSIONS))
+changepass
+cat FILE
+chmod [add|subtr|set] PERMISSIONS FILE
+clear
+mkdir PATH
+pwd
+rm PATH
+writefile PATH [write|append] TEXT
+delay //NOT-IMPLEMENT
+echo (*ARGS)
+mcm (FILE)

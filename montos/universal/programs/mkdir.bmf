@@ -1,1 +1,2 @@
+MONTOSDATA::{'fs': {'default': 'rwx', 'root': 'rwxs'}}
 0 2 8 3 data 5 7 builtin.path 8 / 7 builtin.arg.stitch 8 4 2 9 3 7 data 8 4 1
