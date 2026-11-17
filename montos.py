@@ -397,7 +397,7 @@ def runmon(fpath,cmdl,f=[],pvar={}):
                 var[''.join(atcdat[1])] = pathify(''.join(atcdat[2]))
             elif atcdat[0][0] == chr(9):
                 mkdir(pathify(''.join(atcdat[1]),True))
-            elif atcdat[0][0] == chr(10):
+            elif atcdat[0][0] == chr(10) or atcdat[0][0] == chr(13):
                 if ''.join(atcdat[1]) == ''.join(atcdat[2]):
                     var[''.join(atcdat[3])] = [chr(1)]
                 else:
@@ -500,6 +500,17 @@ def runmon(fpath,cmdl,f=[],pvar={}):
                     c += 1
             elif atcdat[0][0] == chr(22):
                 var[''.join(atcdat[2])] = [''.join([chr(ord(i)+48) for i in atcdat[1]])]
+            elif atcdat[0][0] == chr(23):
+                op = atcdat[1]
+                v1 = atcdat[2]
+                v2 = "1"
+                to = atcdat[2]
+                if len(atcdat) == 4:
+                    v2 = atcdat[3]
+                if len(atcdat) == 5:
+                    v2 = atcdat[3]
+                    to = atcdat[4]
+                
             else:
                 fn = ''.join(atcdat[0])
                 pvars = {}
@@ -508,8 +519,11 @@ def runmon(fpath,cmdl,f=[],pvar={}):
                     for i in funct[fn][0]:
                         pvars[i] = atcdat[c]
                         c += 1
+                    otfn = funct['thisfn'].copy()
+                    funct['thisfn'] = funct[fn].copy()
                     for i,t in runmon(fpath,cmdl,funct[fn][1],pvars).items():
                         var[i] = t
+                    funct['thisfn'] = otfn
             atcdat = []
             mode = 0
         elif i == chr(5) and mode == 2:
@@ -594,7 +608,6 @@ def repairFilePermissions():
 
         rewrite = False
         body = ""
-
         if len(lines) == 1:
             rewrite = True
             body = t
@@ -660,7 +673,7 @@ def login():
         for line in open(pathify("/.startup.mcm",True),ignorePerm=True).read().split('\n'):
             execcmd(line)
         clear()
-        print(f"Montos 0.0.1A \nUser: {usr}.\n")
+        print(f"Montos 0.0.1A \nUser: {usr}.\nMontos Copyright (C) 2026  Alexander DeStefano\nFor license information please run the 'license' command or 'cat /.data/LICENSE'.\n")
         main()
     else:
         print_enter('Incorrect Login.')

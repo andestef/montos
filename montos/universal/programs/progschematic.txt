@@ -36,6 +36,7 @@ NOTE: ASCII 13 (CR) maps to ASCII 10 (LF) (Dont use)
 20 - SYSRUN (COMMAND)
 21 - ARGPARSE (NAME,TYPE...)
 22 - TONUM (TEXT,VAR)
+23 - MATH (OPERATION,V1,V2=1,TO=V1) // 0:+,1:-,2:*,3:/,4:%,5:^
 BUILTIN VARS
 builtin.path (Path to executing directory)
 builtin.arg.(arg number)
